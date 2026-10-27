@@ -1,0 +1,13 @@
+VERDANT FOREST — ASSET CREDITS
+
+Original procedural tree and understory geometry, terrain, materials, wind and atmospheric rendering created for this project.
+
+Bark Brown 02, Forest Leaves 04 and Mossy Rock PBR texture sets by Rob Tuytel, Poly Haven. CC0.
+https://polyhaven.com/a/bark_brown_02
+https://polyhaven.com/a/forest_leaves_04
+https://polyhaven.com/a/mossy_rock
+https://polyhaven.com/license
+
+Texture maps resampled to 2048px for browser delivery. Endgrain texture is procedurally generated for this project.
+
+Three.js — MIT License. https://threejs.org/
