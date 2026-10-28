@@ -25,6 +25,7 @@ var env: Environment
 var sun: DirectionalLight3D
 var ui: CanvasLayer
 var border: MeshInstance3D
+var sharpen: CanvasLayer
 var yaw := 0.0
 var pitch := 0.0
 var tyaw := 0.0
@@ -57,6 +58,7 @@ func _ready() -> void:
 			node.name = mod.get_file().get_basename().capitalize().replace(" ", "")
 			add_child(node)
 	_build_border()
+	_build_sharpen()
 	if not _scripted() or args.has("ui"):        # --ui shows the panel in test shots
 		ui = UI.new()
 		ui.forest = self
@@ -101,8 +103,10 @@ func apply_setting(id: String, on: bool) -> void:
 		"fullscreen":
 			if not _scripted() and (get_window().mode == Window.MODE_FULLSCREEN) != on:
 				_set_fullscreen(on)
-		"aa":
-			get_viewport().use_taa = on
+		"msaa":   # TAA + sharpening by default (steady grass, detail put back); MSAA is crisper but the grass crawls
+			get_viewport().use_taa = not on
+			get_viewport().msaa_3d = Viewport.MSAA_4X if on else Viewport.MSAA_DISABLED
+			sharpen.visible = not on
 		"border":
 			border.visible = on or args.has("border")
 
@@ -153,7 +157,12 @@ func _build_environment() -> void:
 	sun.light_energy = _arg("sun", FM.SUN_INTENSITY / PI)
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 140.0
+	sun.directional_shadow_max_distance = 280.0
+	# the near cascades keep the metres they had at 140 m (14, 28, 70), so close shadows stay as sharp
+	sun.directional_shadow_split_1 = 0.05
+	sun.directional_shadow_split_2 = 0.1
+	sun.directional_shadow_split_3 = 0.25
+	sun.directional_shadow_blend_splits = true    # no visible step in sharpness where one band hands over to the next
 	sun.shadow_blur = 1.2
 	add_child(sun)
 	sun.look_at_from_position(Vector3.ZERO, -FM.SUN_DIRECTION.normalized(), Vector3.UP)
@@ -204,6 +213,22 @@ func _build_terrain() -> void:
 
 ## The walkable edge (settings panel, off by default): a 2.4 m light curtain on the ground along the square the camera
 ## clamp keeps you inside, sampled every metre so it follows the terrain.
+## Contrast-adaptive sharpening over the finished frame, below the settings panel: puts back the fine detail TAA
+## softens (0.7 measured as ~MSAA sharpness with far less shimmer in the grass).
+func _build_sharpen() -> void:
+	sharpen = CanvasLayer.new()
+	sharpen.layer = -10
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var m := ShaderMaterial.new()
+	m.shader = load("res://shaders/sharpen.gdshader")
+	m.set_shader_parameter("amount", 0.7)
+	rect.material = m
+	sharpen.add_child(rect)
+	add_child(sharpen)
+
+
 func _build_border() -> void:
 	var e := FM.EXPLORATION
 	var corners := [Vector2(-e, -e), Vector2(e, -e), Vector2(e, e), Vector2(-e, e), Vector2(-e, -e)]

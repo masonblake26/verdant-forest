@@ -10,11 +10,16 @@ const TreeGen := preload("res://tree_gen.gd")
 const SPECIES := ["oak", "beech", "oak", "birch"]
 const NEAR_HALF := 250.0
 const LOD_DIST := [24.0, 56.0, 150.0, 450.0]
+# Shadows come from their own shadow-only copies of each cell, kept at higher detail than what's drawn (full detail
+# to 40 m, medium to 100 m, low to 200 m), so the dappled light doesn't rearrange right where the drawn trees swap
+# detail, and distant trees start casting far enough out that it isn't seen. Full detail further out costs ~1 ms per
+# 10 m at 1440p.
+const SHADOW_LOD_DIST := [40.0, 100.0, 200.0]
 
 var variants: Array = []          # {wood: [high, medium, low, horizon], leaves: [...], ring, trunk_radius}
 var positions: Array = []         # {x, z, s, v, rot}
 var tree_matrices: Array = []     # Transform3D per position
-var near_cells: Array = []        # {center: Vector2, nodes: [[mmi_wood, mmi_leaves, v]]}
+var near_cells: Array = []        # {center: Vector2, nodes: [[mmi_wood, mmi_leaves, v, shadow_wood, shadow_leaves]]}
 var bark_mats: Array = []
 var leaf_mat := ShaderMaterial.new()
 var lod_clock := 0.0
@@ -219,12 +224,18 @@ func _build_instances() -> void:
 		var origin := Vector3(c2.x, FM.height_at(c2.x, c2.y), c2.y)
 		var w := _mmi(variants[v].wood[0], bark_mats[v % 4], xfs, origin)
 		var l := _mmi(variants[v].leaves[0], leaf_mat, xfs, origin)
-		add_child(w)
-		add_child(l)
+		var sw := _mmi(variants[v].wood[0], bark_mats[v % 4], xfs, origin)
+		var sl := _mmi(variants[v].leaves[0], leaf_mat, xfs, origin)
+		for n: GeometryInstance3D in [w, l]:
+			n.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		for n: GeometryInstance3D in [sw, sl]:
+			n.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		for n in [w, l, sw, sl]:
+			add_child(n)
 		var ck := Vector2i(key.x, key.y)
 		if not by_cell.has(ck):
-			by_cell[ck] = {"center": c2, "nodes": [], "lod": -1}
-		by_cell[ck].nodes.append([w, l, v])
+			by_cell[ck] = {"center": c2, "nodes": [], "lod": -1, "shadow_lod": -1}
+		by_cell[ck].nodes.append([w, l, v, sw, sl])
 	near_cells = by_cell.values()
 	for key in far:
 		var v: int = key.z
@@ -253,17 +264,20 @@ func _process(delta: float) -> void:
 	for c in near_cells:
 		var d: float = cp.distance_to(c.center)
 		var lod := 0 if d < LOD_DIST[0] else (1 if d < LOD_DIST[1] else (2 if d < LOD_DIST[2] else (3 if d < LOD_DIST[3] else 4)))
-		if lod == c.lod:
-			continue
-		c.lod = lod
-		for n in c.nodes:
-			var w: MultiMeshInstance3D = n[0]
-			var l: MultiMeshInstance3D = n[1]
-			w.visible = lod < 4
-			l.visible = lod < 4
-			if lod < 4:
-				w.multimesh.mesh = variants[n[2]].wood[lod]
-				l.multimesh.mesh = variants[n[2]].leaves[lod]
-			var sh := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if d < 90.0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			w.cast_shadow = sh
-			l.cast_shadow = sh
+		var slod := 0 if d < SHADOW_LOD_DIST[0] else (1 if d < SHADOW_LOD_DIST[1] else (2 if d < SHADOW_LOD_DIST[2] else 3))
+		if lod != c.lod:
+			c.lod = lod
+			for n in c.nodes:
+				n[0].visible = lod < 4
+				n[1].visible = lod < 4
+				if lod < 4:
+					n[0].multimesh.mesh = variants[n[2]].wood[lod]
+					n[1].multimesh.mesh = variants[n[2]].leaves[lod]
+		if slod != c.shadow_lod:
+			c.shadow_lod = slod
+			for n in c.nodes:
+				n[3].visible = slod < 3
+				n[4].visible = slod < 3
+				if slod < 3:
+					n[3].multimesh.mesh = variants[n[2]].wood[slod]
+					n[4].multimesh.mesh = variants[n[2]].leaves[slod]

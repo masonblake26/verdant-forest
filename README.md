@@ -14,7 +14,7 @@ reproduces the original's generators exactly, so the same 7,155 trees grow in th
 1. Download `VerdantForest-windows.zip` from the **Releases** page and unzip it anywhere.
 2. Run `VerdantForest.exe`. The forest takes about 15 seconds to grow the first time you open it.
 
-Needs Windows 10 or 11 and a graphics card with Vulkan support. It runs at 60-80 fps at 2560x1440 on an RTX 5080.
+Needs Windows 10 or 11 and a graphics card with Vulkan support. It runs at about 50 fps at 2560x1440 on an RTX 5080 (a dense forest view).
 Slower cards will want a smaller window.
 
 ## Controls
@@ -22,7 +22,7 @@ Slower cards will want a smaller window.
 | Movement | | Settings (panel, bottom left) | |
 |---|---|---|---|
 | Move | W A S D | Fullscreen | F11 |
-| Rise | Space | Anti-aliasing | T |
+| Rise | Space | Crisp edges (MSAA) | T |
 | Descend | E | Frame rate | F3 |
 | Sprint | Shift | Walkable edge | B |
 | Zoom | Mouse wheel | Back to the trail | R |
@@ -30,6 +30,9 @@ Slower cards will want a smaller window.
 
 The mouse is captured for looking. Esc frees it so you can click the panel; Esc again quits. Your settings are kept
 between runs.
+
+Edges are smoothed with sharpened TAA by default. T switches to 4x MSAA, which is a little crisper but makes the
+grass shimmer as you move.
 
 ## Run from source
 

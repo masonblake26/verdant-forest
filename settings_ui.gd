@@ -14,7 +14,7 @@ const ITEMS := [
 	["sprint", "Sprint", "Movement", KEY_SHIFT, "hold"],
 	["zoom", "Zoom", "Movement", KEY_NONE, "show"],
 	["fullscreen", "Fullscreen", "Display", KEY_F11, "toggle"],
-	["aa", "Anti-aliasing (TAA)", "Display", KEY_T, "toggle"],
+	["msaa", "Crisp edges (MSAA)", "Display", KEY_T, "toggle"],
 	["stats", "Frame rate", "Display", KEY_F3, "toggle"],
 	["border", "Walkable edge", "World", KEY_B, "toggle"],
 	["home", "Return to the trail", "World", KEY_R, "action"],
@@ -22,7 +22,7 @@ const ITEMS := [
 ]
 const SHOWN := {"move": "WASD", "zoom": "Mouse Wheel"}
 const WASD := {"forward": KEY_W, "back": KEY_S, "left": KEY_A, "right": KEY_D}
-const DEFAULTS := {"fullscreen": false, "aa": true, "stats": true, "border": false, "panel": true}
+const DEFAULTS := {"fullscreen": false, "msaa": false, "stats": true, "border": false, "panel": true}
 
 # Moss, bark and late-afternoon amber.
 const C_BG := Color(0.043, 0.075, 0.051, 0.88)
